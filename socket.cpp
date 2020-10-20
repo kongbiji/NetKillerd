@@ -1,6 +1,7 @@
 #include "socket.h"
 
-extern volatile bool broad_run;
+extern GW_info gw_info;
+extern ATTACKER_info attacker_info;
 
 bool connect_sock(int * client_sock, int server_port)
 {
@@ -68,21 +69,10 @@ bool recv_data(int client_sock, char *data)
     return true;
 }
 
-
-void attack(pcap_t* handle, Arp arp, int client_fd){
-    printf("run = %d\n", broad_run);
-    char data[1024] = {0,};
-    while(broad_run){
-        sleep(2);
-        arp.start_attack(handle, data);
-        //send(client_fd, data, sizeof(data),0);
-    }
-}
-
-void scan_pkt_check(Info info, uint32_t ip, int client_sock){
+void scan_pkt_check(uint32_t ip, int client_sock){
     int k = 0;
     char err[PCAP_ERRBUF_SIZE];
-    pcap_t* handle = pcap_open_live(info.iface_name, BUFSIZ, 1, 1000, err);
+    pcap_t* handle = pcap_open_live(gw_info.iface_name, BUFSIZ, 1, 1000, err);
     struct pcap_pkthdr* header;
     const u_char *rep;
     ARP_Packet * pkt_ptr;
@@ -111,8 +101,6 @@ void scan_pkt_check(Info info, uint32_t ip, int client_sock){
             sprintf(str_ip, "%d.%d.%d.%d\t", (ip)&0xFF, (ip>>8)&0xFF, (ip>>16)&0xFF, (ip>>24)&0xFF);
             strcat(data, str_ip);
 
-            printf("data >> %s\n", data);
-
             send_data(client_sock, data);
             break;
         }
@@ -122,42 +110,39 @@ void scan_pkt_check(Info info, uint32_t ip, int client_sock){
     pcap_close(handle);
 }
 
-void scan_pkt_send(Info info, Arp find_dev_arp, int client_sock){
+void scan_pkt_send(int client_sock){
+
+    uint32_t broad_ip = 0;
+    uint8_t broad_mac[6];
+    memset(broad_mac, 0xff, sizeof(uint8_t)*6);
+
     char err[PCAP_ERRBUF_SIZE];
-    pcap_t* handle = pcap_open_live(info.iface_name, BUFSIZ, 1, 1000, err);
+    pcap_t* handle = pcap_open_live(gw_info.iface_name, BUFSIZ, 1, 1000, err);
     struct pcap_pkthdr* header;
     const u_char *rep;
     ARP_Packet * arp_pkt = (ARP_Packet *)malloc(sizeof(ARP_Packet));
     // scanning
     for(int i = 1; i < 256; i++){
-        uint32_t tmp_target_ip = info.gw_ip + htonl(i);
-        find_dev_arp.target_ip = tmp_target_ip;
-        memset(arp_pkt, 0, sizeof(ARP_Packet));
-        memset(find_dev_arp.pkt, 0, sizeof(ARP_Packet));
+        uint32_t tmp_target_ip = gw_info.ip + htonl(i);
 
-        find_dev_arp.make_arp_packet(find_dev_arp.target_mac, find_dev_arp.sender_mac, 0x1,
-                                            find_dev_arp.sender_ip, find_dev_arp.target_ip, arp_pkt);
-        memcpy(find_dev_arp.pkt, arp_pkt, sizeof(ARP_Packet));
+        memset(arp_pkt, 0, sizeof(ARP_Packet));
+        u_char pkt[sizeof(ARP_Packet)];
+        memset(pkt, 0, sizeof(ARP_Packet));
+
+        make_arp_packet(broad_mac, attacker_info.mac, 0x1,
+                                            attacker_info.ip, tmp_target_ip, arp_pkt);
+        memcpy(pkt, arp_pkt, sizeof(ARP_Packet));
 
         // send arp req to find taregt mac
-        if(pcap_sendpacket(handle, find_dev_arp.pkt ,sizeof(find_dev_arp.pkt))!=0){
+        if(pcap_sendpacket(handle, pkt ,sizeof(pkt))!=0){
             printf("[-] Error in find target's MAC\n");
             pcap_close(handle);
             exit(0);
         }
-        std::thread scan_thread(scan_pkt_check, info, tmp_target_ip, client_sock);
+        std::thread scan_thread(scan_pkt_check, tmp_target_ip, client_sock);
         scan_thread.detach();   
         usleep( 1000 * 300 );
     }
                 
     free(arp_pkt);
-}
-
-void print_ip(uint32_t ip){
-    printf("%d.%d.%d.%d\n", (ip)&0xFF, (ip>>8)&0xFF, (ip>>16)&0xFF, (ip>>24)&0xFF);
-}
-void print_MAC(uint8_t *addr){
-    printf("%02X:%02X:%02X:%02X:%02X:%02X\n",
-           addr[0],addr[1],addr[2],addr[3],
-            addr[4],addr[5]);
 }

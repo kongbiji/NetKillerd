@@ -1,11 +1,14 @@
 #include "arp_spoof.h"
 
-Arp::Arp(){
-    memset(this->target_mac, 0xff, sizeof(this->target_mac));
-    this->target_ip = 0;
-}
+extern volatile bool broad_run;
 
-void Arp::make_arp_packet(uint8_t *target_mac, uint8_t *src_mac, int op, uint32_t sender_ip, uint32_t target_ip, ARP_Packet * packet){
+extern GW_info gw_info;
+extern ATTACKER_info attacker_info;
+
+extern DEV_info ap_info;
+extern std::map<MAC, DEV_info> dev_list;
+
+void make_arp_packet(uint8_t *target_mac, uint8_t *src_mac, int op, uint32_t sender_ip, uint32_t target_ip, ARP_Packet * packet){
     memcpy(packet->eth.dst_MAC,target_mac,sizeof(packet->eth.dst_MAC)); 
     memcpy(packet->eth.src_MAC, src_mac,sizeof(packet->eth.src_MAC));
     packet->eth.ether_type=htons(0x0806);
@@ -25,13 +28,4 @@ void Arp::make_arp_packet(uint8_t *target_mac, uint8_t *src_mac, int op, uint32_
     packet->arp.sender_ip = sender_ip;
     packet->arp.target_ip = target_ip;
 
-}
-
-
-void Arp::start_attack(pcap_t* handle, char * data){
-    if(pcap_sendpacket(handle, this->attack_pkt, sizeof(ARP_Packet))!=0){
-        strcpy(data, "[-] couldn't send attack pkt");
-        return;
-    }
-    strcpy(data, "[+] success to send attack pkt");
 }

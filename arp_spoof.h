@@ -2,8 +2,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <unistd.h>
 #include <arpa/inet.h>
 #include <pcap.h>
+#include <map>
 
 #pragma pack(push,1)
 typedef struct {
@@ -29,7 +31,7 @@ typedef struct {
     ARP arp;
 }ARP_Packet;
 
-struct info{
+typedef struct {
     char name[10];
     char desc[40];
     pcap_if_t * dev{nullptr};
@@ -37,22 +39,40 @@ struct info{
     uint32_t subnetmask;
     uint32_t gateway;
     uint32_t ip_and_mask;
-};
+}info;
+
+typedef struct {
+    uint8_t mac[6];
+    uint32_t ip;
+    char iface_name[10];
+}GW_info;
+
+typedef struct {
+    uint8_t mac[6];
+    uint32_t ip;
+}ATTACKER_info;
+
+typedef struct {
+    uint8_t victim_mac[6];
+    uint32_t victim_ip;
+    uint8_t attacker_mac[6];
+    uint32_t attacker_ip;
+    volatile bool is_attack;
+
+    u_char attack_pkt[sizeof(ARP_Packet)];
+
+    pcap_t * handle;
+
+}DEV_info;
+
+typedef struct MAC{
+    uint8_t mac[6];
+    bool operator <(const MAC& var) const
+    {
+        return memcmp(mac, var.mac, sizeof(mac)) < 0;
+    }
+} MAC;
+
 #pragma pack(pop)
 
-class Arp{
-private:
-    
-public:
-    uint32_t target_ip;
-    uint8_t target_mac[6];
-    uint32_t sender_ip;
-    uint8_t sender_mac[6]; // attacker's MAC
-    char dev[10];
-    u_char attack_pkt[sizeof(ARP_Packet)];
-    u_char pkt[sizeof(ARP_Packet)];
-    Arp();
-    void make_arp_packet(uint8_t *target_mac, uint8_t *src_mac, int op, uint32_t sender_ip, uint32_t target_ip, ARP_Packet * packet);
-    void start_attack(pcap_t* handle, char * data);
-    void stop_attack(pcap_t* handle, char * data);
-};
+void make_arp_packet(uint8_t *target_mac, uint8_t *src_mac, int op, uint32_t sender_ip, uint32_t target_ip, ARP_Packet * packet);
