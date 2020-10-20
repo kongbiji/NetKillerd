@@ -36,6 +36,7 @@ void stop_attack(pcap_t * handle, DEV_info dev){
     }
     sleep(1);
     }
+    pcap_close(handle);
 }
 
 void start_attack(pcap_t * handle, DEV_info dev, int is_dev, MAC key){
@@ -246,7 +247,6 @@ int main(){
                 iter->second.is_attack = 0;
                 sleep(3);
                 dev_list.erase(find_mac);
-                break;
             }
         }
     }
