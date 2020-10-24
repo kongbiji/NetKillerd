@@ -3,6 +3,8 @@
 extern GW_info gw_info;
 extern ATTACKER_info attacker_info;
 
+bool is_scanning = true;
+
 bool connect_sock(int * client_sock, int server_port)
 {
     bool ret = true;
@@ -69,28 +71,33 @@ bool recv_data(int client_sock, char *data)
     return true;
 }
 
-void scan_pkt_check(uint32_t ip, int client_sock){
+void scan_pkt_check(int client_sock){
     int k = 0;
     char err[PCAP_ERRBUF_SIZE];
     pcap_t* handle = pcap_open_live(gw_info.iface_name, BUFSIZ, 1, 1000, err);
     struct pcap_pkthdr* header;
     const u_char *rep;
     ARP_Packet * pkt_ptr;
-    char data[1024] = {0,};
-    data[0] = '3';
-    data[1] = '\t';
+    
     while(1){ //check correct arp reply
-        if(k == 6){
-            break; // not found
+        char data[1024] = {0,};
+        data[0] = '3';
+        data[1] = '\t';
+        if(k == 30){
+            break; // scanning end
         }
         int ret = pcap_next_ex(handle, &header, &rep);          
         if(ret == 0 || ret == -1){
-            k++;
+            if(!is_scanning){
+                k++;
+            }
             continue;
         }
         pkt_ptr = (ARP_Packet *)rep;
-        if((ntohs(pkt_ptr->eth.ether_type) == 0x0806) 
-            && (pkt_ptr->arp.sender_ip == ip) && (ntohs(pkt_ptr->arp.opcode) == 2)){
+
+        if((ntohs(pkt_ptr->eth.ether_type) == 0x0806) && (pkt_ptr->arp.target_ip == attacker_info.ip) &&
+            (memcpy(pkt_ptr->arp.target_mac, attacker_info.mac, sizeof(uint8_t)*6))
+            && (ntohs(pkt_ptr->arp.opcode) == 2) && (pkt_ptr->arp.sender_ip != gw_info.ip)){
             char str_mac[21];
             char str_ip[16] = {0, };
 
@@ -98,51 +105,51 @@ void scan_pkt_check(uint32_t ip, int client_sock){
             pkt_ptr->arp.sender_mac[3],pkt_ptr->arp.sender_mac[4],pkt_ptr->arp.sender_mac[5]);
             strcat(data, str_mac);
             
-            sprintf(str_ip, "%d.%d.%d.%d\t", (ip)&0xFF, (ip>>8)&0xFF, (ip>>16)&0xFF, (ip>>24)&0xFF);
+            sprintf(str_ip, "%d.%d.%d.%d\t", (pkt_ptr->arp.sender_ip)&0xFF, (pkt_ptr->arp.sender_ip>>8)&0xFF,
+             (pkt_ptr->arp.sender_ip>>16)&0xFF, (pkt_ptr->arp.sender_ip>>24)&0xFF);
             strcat(data, str_ip);
 
             send_data(client_sock, data);
-            break;
         }
-                    
-        k++;
+        if(!is_scanning){
+            k++;
+        }
     }
-    pcap_close(handle);
+    pcap_close(handle); 
 }
 
-void scan_pkt_send(int client_sock){
+void scan_pkt_send(int client_sock, uint32_t subnet){
 
     uint32_t broad_ip = 0;
     uint8_t broad_mac[6];
     memset(broad_mac, 0xff, sizeof(uint8_t)*6);
 
     char err[PCAP_ERRBUF_SIZE];
-    pcap_t* handle = pcap_open_live(gw_info.iface_name, BUFSIZ, 1, 1000, err);
+    pcap_t * handle = pcap_open_live(gw_info.iface_name, BUFSIZ, 1, 1000, err);
     struct pcap_pkthdr* header;
     const u_char *rep;
     ARP_Packet * arp_pkt = (ARP_Packet *)malloc(sizeof(ARP_Packet));
-    // scanning
-    for(int i = 1; i < 256; i++){
-        uint32_t tmp_target_ip = gw_info.ip + htonl(i);
 
+    uint32_t start_ip = (ntohl(attacker_info.ip) & ntohl(subnet)) +1;
+    uint32_t end_ip = (ntohl(attacker_info.ip) | ntohl(~subnet)) +1;
+
+     // scanning
+    for(start_ip; start_ip <= end_ip; start_ip++){
         memset(arp_pkt, 0, sizeof(ARP_Packet));
         u_char pkt[sizeof(ARP_Packet)];
         memset(pkt, 0, sizeof(ARP_Packet));
-
         make_arp_packet(broad_mac, attacker_info.mac, 0x1,
-                                            attacker_info.ip, tmp_target_ip, arp_pkt);
+                                            attacker_info.ip, htonl(start_ip), arp_pkt);
         memcpy(pkt, arp_pkt, sizeof(ARP_Packet));
-
         // send arp req to find taregt mac
         if(pcap_sendpacket(handle, pkt ,sizeof(pkt))!=0){
             printf("[-] Error in find target's MAC\n");
             pcap_close(handle);
             exit(0);
         }
-        std::thread scan_thread(scan_pkt_check, tmp_target_ip, client_sock);
-        scan_thread.detach();   
         usleep( 1000 * 300 );
     }
-                
+    pcap_close(handle); 
     free(arp_pkt);
+    is_scanning = false;
 }

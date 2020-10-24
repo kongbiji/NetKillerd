@@ -26,5 +26,6 @@ void save_gw_ip(uint32_t * gw_ip);
 void save_gw_mac(char * dev, uint8_t * gw_mac);
 void save_my_ip(uint32_t * ip);
 void save_my_mac(char * dev, uint8_t * mac);
+uint32_t get_subnet(char * dev);
 void print_mac(uint8_t *mac);
 void print_ip(uint32_t ip);

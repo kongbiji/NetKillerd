@@ -123,6 +123,33 @@ void save_my_mac(char *dev, uint8_t *mac)
     memcpy(mac, tmp, sizeof(uint8_t) * 6);
 }
 
+uint32_t get_subnet(char * dev)
+{
+    int sock;
+    struct ifreq ifr;
+    struct sockaddr_in *sin;
+
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (sock < 0) {
+        return 0;
+    }
+
+
+    strcpy(ifr.ifr_name, dev);
+    if (ioctl(sock, SIOCGIFNETMASK, &ifr)< 0)
+    {
+        close(sock);
+        return 0;
+    }
+
+    sin = (struct sockaddr_in*)&ifr.ifr_addr;
+    uint32_t subnet_mask = sin->sin_addr.s_addr;
+    close(sock);
+
+    return subnet_mask;
+}
+
 void print_mac(uint8_t *mac)
 {
     printf("%02X:%02X:%02X:%02X:%02X:%02X\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);

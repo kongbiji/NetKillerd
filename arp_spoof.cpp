@@ -23,6 +23,7 @@ void make_arp_packet(uint8_t *target_mac, uint8_t *src_mac, int op, uint32_t sen
         memcpy(packet->arp.target_mac, "\x00\x00\x00\x00\x00\x00", sizeof(packet->arp.target_mac));
     }
     if(op==2) { // ARP reply
+        
         memcpy(packet->arp.target_mac, target_mac, sizeof(packet->arp.target_mac));
     }
     packet->arp.sender_ip = sender_ip;

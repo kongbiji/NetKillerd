@@ -75,7 +75,6 @@ void start_attack(pcap_t * handle, DEV_info dev, int is_dev, MAC key){
         //     (pkt_ptr->arp.target_ip>>16)&0xFF, (pkt_ptr->arp.target_ip>>24)&0xFF);
         // }
         
-
         // if(ntohs(pkt_ptr->eth.ether_type) == 0x0806 && 
         //     (pkt_ptr->arp.sender_ip == this->sender_ip || pkt_ptr->arp.target_ip == this->sender_ip)){
         //     for(int i = 0; i < 4; i++){
@@ -141,11 +140,14 @@ int main(){
     char rdata[1024] = {0,};
     char sdata[1024] = {0,};
 
-    while(1){
+    uint32_t subnet;
 
+    while(1){
+        printf("htehaktsfkjsdlfjskldfjklsjfklsjdflkd\n");
         memset(rdata, 0x00, BUF_SIZE);
         recv_data(client_sock, rdata);
         int signal = atoi(&rdata[0]);
+        printf("request num >> %d\n", signal);
 
         // 1. get basic informations
         if(signal == 1){
@@ -157,6 +159,11 @@ int main(){
             print_ip(gw_info.ip);
             print_ip(attacker_info.ip);
             print_mac(attacker_info.mac);
+
+            subnet = get_subnet(gw_info.iface_name);
+            printf("????????????????????\n");
+            char str_subnet[30] {0, };
+            sprintf(str_subnet, "%d.%d.%d.%d\n", (subnet)&0xFF, (subnet >> 8) & 0xFF, (subnet >> 16) & 0xFF, (subnet >> 24) & 0xFF);
         }
         
         // 2. broadcast attack signal
@@ -180,13 +187,17 @@ int main(){
             ap_info.is_attack = 1;
             MAC null_mac;
             memset(null_mac.mac, 0x00, sizeof(uint8_t)*6);
+
             std::thread attack_thread(start_attack, ap_info.handle, ap_info, 0, null_mac);
             attack_thread.detach();
             free(arp_data);
         }
         // 3. scan devices
         if(signal == 3){
-            std::thread scan_send_thread(scan_pkt_send, client_sock);
+            std::thread scan_thread(scan_pkt_check, client_sock);
+            scan_thread.detach(); 
+
+            std::thread scan_send_thread(scan_pkt_send, client_sock, subnet);
             scan_send_thread.detach();
         }
         // 4. unicast attack

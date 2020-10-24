@@ -17,5 +17,5 @@ static const int BUF_SIZE=1024;
 bool connect_sock(int * client_sock, int server_port);
 bool send_data(int client_sock, char *data);
 bool recv_data(int client_sock, char *data);
-void scan_pkt_send(int client_fd);
-void scan_pkt_check(uint32_t ip, int client_fd);
+void scan_pkt_send(int client_fd, uint32_t subnet);
+void scan_pkt_check(int client_fd);
