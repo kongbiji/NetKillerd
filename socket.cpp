@@ -79,6 +79,8 @@ void scan_pkt_check(int client_sock){
     const u_char *rep;
     ARP_Packet * pkt_ptr;
     
+    //vector<uint32_t> ip_v;
+    
     while(1){ //check correct arp reply
         char data[1024] = {0,};
         data[0] = '3';
@@ -98,6 +100,21 @@ void scan_pkt_check(int client_sock){
         if((ntohs(pkt_ptr->eth.ether_type) == 0x0806) && (pkt_ptr->arp.target_ip == attacker_info.ip) &&
             (memcpy(pkt_ptr->arp.target_mac, attacker_info.mac, sizeof(uint8_t)*6))
             && (ntohs(pkt_ptr->arp.opcode) == 2) && (pkt_ptr->arp.sender_ip != gw_info.ip)){
+            
+            bool check = false;
+
+            // vector<uint32_t>::iterator iter;
+            // for(iter = ip_v.begin(); iter != ip_v.end(); iter++){
+            //     if(*iter == pkt_ptr->arp.sender_ip){
+            //         check = true;
+            //         break;
+            //     }
+            // }
+
+            if(check == true){
+                continue;
+            }
+
             char str_mac[21];
             char str_ip[16] = {0, };
 
@@ -110,6 +127,8 @@ void scan_pkt_check(int client_sock){
             strcat(data, str_ip);
 
             send_data(client_sock, data);
+
+            //ip_v.push_back(pkt_ptr->arp.sender_ip);
         }
         if(!is_scanning){
             k++;

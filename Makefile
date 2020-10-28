@@ -1,18 +1,21 @@
 TARGET=netkillerd
-OBJS=main.o socket.o get_info.o arp_spoof.o
-CXXFLAGS+=-I../../android/sysroot/include
-LDFLAGS+=-L../../android/sysroot/lib
+SRCS	=$(wildcard *.cpp)
+OBJECTS	=$(SRCS:.cpp=.o)
+
+CXXFLAGS+=-I/root/android/sysroot/include
+LDFLAGS+=-L/root/android/sysroot/lib
+
 LDLIBS+=-lpcap
 
 all: $(TARGET)
 
-$(TARGET) : $(OBJS)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $(OBJS) $(LDLIBS)
+$(TARGET) : $(OBJECTS)
+	$(CXX) $(LDFLAGS) $(TARGET_ARCH) $(OBJECTS) $(LDLIBS) -o $(TARGET)
 
 main.o: main.cpp
-socket.o: socket.cpp
-get_info.o: get_info.cpp
-arp_spoof.o: arp_spoof.cpp
+socket.o: socket.cpp socket.h
+get_info.o: get_info.cpp get_info.h
+arp_spoof.o: arp_spoof.cpp arp_spoof.h
 
 clean:
 	rm -f $(TARGET)

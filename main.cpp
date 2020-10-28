@@ -58,33 +58,7 @@ void start_attack(pcap_t * handle, DEV_info dev, int is_dev, MAC key){
         if(pcap_sendpacket(handle, dev.attack_pkt, sizeof(ARP_Packet))!=0){
             
         }
-        sleep(1.5);
-        // int ret = pcap_next_ex(handle, &header, &rep);
-
-        // if(ret == 0 || ret == -1){
-        //     continue;
-        // }
-
-        // pkt_ptr = (ARP_Packet *)rep;
-        
-        // if(ntohs(pkt_ptr->eth.ether_type) == 0x0806){
-        //     printf("gw IP : %d.%d.%d.%d\n", (this->sender_ip)&0xFF, (this->sender_ip>>8)&0xFF, (this->sender_ip>>16)&0xFF, (this->sender_ip>>24)&0xFF);
-        //     printf("sender IP : %d.%d.%d.%d\n", (pkt_ptr->arp.sender_ip)&0xFF, (pkt_ptr->arp.sender_ip>>8)&0xFF, 
-        //     (pkt_ptr->arp.sender_ip>>16)&0xFF, (pkt_ptr->arp.sender_ip>>24)&0xFF);
-        //     printf("target IP : %d.%d.%d.%d\n", (pkt_ptr->arp.target_ip)&0xFF, (pkt_ptr->arp.target_ip>>8)&0xFF, 
-        //     (pkt_ptr->arp.target_ip>>16)&0xFF, (pkt_ptr->arp.target_ip>>24)&0xFF);
-        // }
-        
-        // if(ntohs(pkt_ptr->eth.ether_type) == 0x0806 && 
-        //     (pkt_ptr->arp.sender_ip == this->sender_ip || pkt_ptr->arp.target_ip == this->sender_ip)){
-        //     for(int i = 0; i < 4; i++){
-        //         if(pcap_sendpacket(handle, this->attack_pkt, sizeof(ARP_Packet))!=0){
-        //             printf("[-] couldn't send attack pkt\n");
-        //             continue;
-        //         }
-        //         strcpy(data, "[+] success to send attack pkt");
-        //     }
-        // }
+        sleep(1);
     }
     stop_attack(handle, dev);
 }
