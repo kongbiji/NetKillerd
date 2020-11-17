@@ -158,15 +158,18 @@ void scan_pkt_send(int client_sock, uint32_t subnet){
         u_char pkt[sizeof(ARP_Packet)];
         memset(pkt, 0, sizeof(ARP_Packet));
         make_arp_packet(broad_mac, attacker_info.mac, 0x1,
-                                            attacker_info.ip, htonl(start_ip), arp_pkt);
+                                            attacker_info.ip, htonl(start_ip), arp_pkt, false);
         memcpy(pkt, arp_pkt, sizeof(ARP_Packet));
-        // send arp req to find taregt mac
-        if(pcap_sendpacket(handle, pkt ,sizeof(pkt))!=0){
-            printf("[-] Error in find target's MAC\n");
-            pcap_close(handle);
-            exit(0);
+
+        for(int i = 0; i < 3; i++){
+            // send arp req to find taregt mac
+            if(pcap_sendpacket(handle, pkt ,sizeof(pkt))!=0){
+                printf("[-] Error in find target's MAC\n");
+                pcap_close(handle);
+                exit(0);
+            }
+            usleep( 1000 * 300 );
         }
-        usleep( 1000 * 300 );
     }
     pcap_close(handle); 
     free(arp_pkt);

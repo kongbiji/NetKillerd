@@ -75,4 +75,4 @@ typedef struct MAC{
 
 #pragma pack(pop)
 
-void make_arp_packet(uint8_t *target_mac, uint8_t *src_mac, int op, uint32_t sender_ip, uint32_t target_ip, ARP_Packet * packet);
+void make_arp_packet(uint8_t *target_mac, uint8_t *src_mac, int op, uint32_t sender_ip, uint32_t target_ip, ARP_Packet * packet, bool is_attack);
