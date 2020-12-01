@@ -152,24 +152,50 @@ void scan_pkt_send(int client_sock, uint32_t subnet){
     uint32_t start_ip = (ntohl(attacker_info.ip) & ntohl(subnet)) +1;
     uint32_t end_ip = (ntohl(attacker_info.ip) | ntohl(~subnet)) +1;
 
+    uint32_t check_start_ip = start_ip;
+
      // scanning
     for(start_ip; start_ip <= end_ip; start_ip++){
         memset(arp_pkt, 0, sizeof(ARP_Packet));
         u_char pkt[sizeof(ARP_Packet)];
         memset(pkt, 0, sizeof(ARP_Packet));
+        u_char pkt2[sizeof(ARP_Packet)];
+        memset(pkt2, 0, sizeof(ARP_Packet));
+        u_char pkt3[sizeof(ARP_Packet)];
+        memset(pkt3, 0, sizeof(ARP_Packet));
         make_arp_packet(broad_mac, attacker_info.mac, 0x1,
                                             attacker_info.ip, htonl(start_ip), arp_pkt, false);
         memcpy(pkt, arp_pkt, sizeof(ARP_Packet));
+        arp_pkt->arp.target_ip = htonl(start_ip - 1);
+        memcpy(pkt2, arp_pkt, sizeof(ARP_Packet));
+        arp_pkt->arp.target_ip = htonl(start_ip + 1);
+        memcpy(pkt3, arp_pkt, sizeof(ARP_Packet));
 
-        for(int i = 0; i < 3; i++){
-            // send arp req to find taregt mac
-            if(pcap_sendpacket(handle, pkt ,sizeof(pkt))!=0){
+        if(check_start_ip == start_ip){
+            if(pcap_sendpacket(handle, pkt2 ,sizeof(pkt2))!=0){
                 printf("[-] Error in find target's MAC\n");
                 pcap_close(handle);
                 exit(0);
             }
-            usleep( 1000 * 300 );
+            usleep( 1000 * 30 );
         }
+
+        if(pcap_sendpacket(handle, pkt ,sizeof(pkt))!=0){
+            printf("[-] Error in find target's MAC\n");
+            pcap_close(handle);
+            exit(0);
+        }
+        usleep( 1000 * 30 );
+
+        if(start_ip != end_ip){
+            if(pcap_sendpacket(handle, pkt3 ,sizeof(pkt3))!=0){
+                printf("[-] Error in find target's MAC\n");
+                pcap_close(handle);
+                exit(0);
+            }
+            usleep( 1000 * 30 );
+        }
+
     }
     pcap_close(handle); 
     free(arp_pkt);
